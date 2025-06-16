@@ -1,0 +1,768 @@
+\documentclass[letterpaper,11pt]{article}
+\pagestyle{plain}
+
+%\usepackage{showkeys}
+
+\usepackage[top=1in,bottom=1.25in, left=1in, right=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage[font=footnotesize]{caption}
+% The amsmath package sets \interdisplaylinepenalty to 10000
+% thus preventing page breaks from occurring within multiline equations. Use:
+\interdisplaylinepenalty=2500
+% to restore such page breaks as IEEEtran.cls normally does.
+\usepackage{algorithm,algorithmic}
+\usepackage{amssymb,amsthm, mathrsfs}
+\usepackage{array}
+\usepackage{enumerate}
+\usepackage{enumitem}
+%\usepackage{enumitem-zref}
+\usepackage{graphicx}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{subfig}
+\usepackage{tikz}
+\usepackage{pgf}
+\usepackage{booktabs}
+\usetikzlibrary{arrows, positioning, patterns, patterns.meta}
+\usepackage{tikz-cd}
+\usepackage{natbib}
+\usepackage{bbm}
+\bibpunct{(}{)}{;}{a}{}{,}
+\usepackage{stackengine}
+\usepackage{pifont}
+\usepackage{mathabx}
+
+\title{Multi-Armed Bandit and Linear Bandit}
+\author{Hao Yan}
+%\date{March 2023}
+\date{}
+
+\begin{document}
+\input{header}
+\maketitle
+
+\section{Thompson sampling for two-armed bandit}
+
+
+\begin{table}[h]
+    \centering
+    \renewcommand{\arraystretch}{1.2} % Adjust row height
+    \begin{tabular}{c p{12cm}}
+        \hline
+        \textbf{Notations} & \textbf{Description} \\ 
+        \hline
+        $L$ & $L=24(\log T) / \Delta^2$.\\
+        $j_0$ & Number of plays of the first arm until $L$ plays of the second arm.\\ 
+        $t_j$ & Time step at which the $j$th play of the first arm happens. \\ 
+        $Y_j$ & $Y_j = t_{j+1} - t_j - 1$ measures the number of time steps between the $j^{\text {th }}$ and $(j+1)^{\text {th }}$ plays of the first arm. \\ 
+        $s(j)$ & Number of successes in the first $j$ plays of the first arm. \\ 
+        $k_2(T)$ & Number of plays of the second arm in time $T$. \\
+        $X(j, s, y)$ & Number of trials before a $\operatorname{Beta}(s+1, j-s+1)$ distributed random variable exceeds a threshold $y$.
+        \\ \hline
+    \end{tabular}
+    \caption{Notation table}
+    \label{tab:notation}
+\end{table}
+
+
+Here, we reproduce the proof of the two-armed bandit case. 
+We will first bound the expectation of $Y_j$. 
+The reason we want to control this term is because we have
+\begin{equation*}
+    \E [k_2(T)] \leq L + \E \left[\sum_{j=j_0}^{T-1} Y_j\right]
+\end{equation*}
+and 
+\begin{equation*}
+    \operatorname{Regret}(T) = k_2(T) \cdot \Delta. 
+\end{equation*}
+Bounding the above term controls the regret. 
+
+By definition, $Y_j$ is the number of steps before $\theta_1(t) > \theta_2(t)$ after the $j^{\text{th}}$ play of the first arm. 
+Thus, $Y_j$ can be written as
+\begin{equation*}
+    Y_j = \sum_{t = t_j+1}^T \prod_{s=t_{j}+1}^t \mathbbm{1}\left(\theta_1(s) \leq \theta_2(s)\right).
+\end{equation*}
+Consider the number of steps before $\theta_1(t) > \mu_2 + \frac{\Delta}{2}$ happens for the first time after the $j$th play of the first arm. 
+Given $s(j)$, this has the same distribution as $X(j, s(j), \mu_2 + \frac{\Delta}{2})$. 
+The term $Y_2$ can be decomposed into
+\begin{equation*}
+    \sum_{t = t_j+1}^T \prod_{s=t_{j}+1}^{t-1} \mathbbm{1}\left(\theta_1(s) \leq \theta_2(s)\right) \left[ \mathbbm{1}\left(\theta_1(t) > \mu_2 + \frac{\Delta}{2}, \theta_2(t) < \theta_1(t)\right) + \mathbbm{1}\left(\theta_1(t) > \mu_2 + \frac{\Delta}{2}, \theta_2(t) \geq \theta_1(t)\right)\right],
+\end{equation*}
+which is upper bounded by
+\begin{equation*}
+    \sum_{t = t_j+1}^T \prod_{s=t_{j}+1}^{t-1} \mathbbm{1}\left(\theta_1(s) \leq \theta_2(s)\right) \left[ \mathbbm{1}\left(\theta_1(t) > \mu_2 + \frac{\Delta}{2}\right) + \mathbbm{1}\left(\theta_2(t) > \mu_2 + \frac{\Delta}{2}\right)\right],
+\end{equation*}
+and the first part of the sum is given by 
+\begin{equation*}
+    X\left(j, s(j), \mu_2 + \frac{\Delta}{2}\right) \wedge T. 
+\end{equation*}
+Therefore, we have
+\begin{equation*}
+    Y_j \leq X\left(j, s(j), \mu_2 + \frac{\Delta}{2}\right) \wedge T + \sum_{t=t_j+1}^T \mathbbm{1}\left(\theta_2(t) > \mu_2 + \frac{\Delta}{2}\right). 
+\end{equation*}
+Summing over $j$ from $j_0$ to $T-1$, we have
+\begin{equation*}
+\begin{aligned}
+    \sum_{j=j_0}^{T-1} Y_j &\leq \sum_{j=0}^{T-1} X\left(j, s(j), \mu_2 + \frac{\Delta}{2}\right) \wedge T + \sum_{j=j_0}^{T-1} \sum_{t=t_j+1}^T \mathbbm{1}\left(\theta_2(t) > \mu_2 + \frac{\Delta}{2}, j \geq j_0\right)\\
+    &\leq \sum_{j=0}^{T-1} X\left(j, s(j), \mu_2 + \frac{\Delta}{2}\right) \wedge T + T \cdot \sum_{t=1}^T \mathbbm{1}\left(\theta_2(t) > \mu_2 + \frac{\Delta}{2}, k_2(t) \geq L\right),
+\end{aligned}
+\end{equation*}
+where the last inequality follows from the definition that any $j \geq j_0$, we must have $t \geq t_j$ to satisfy $k_2(t) \geq L$. 
+Taking expectation on both sides, we have
+\begin{equation*}
+    \E \left[\sum_{j=j_0}^{T-1} Y_j\right] \leq \sum_{j=0}^{T-1} \E \left[ X\left(j, s(j), \mu_2 + \frac{\Delta}{2}\right) \wedge T \right] + T \cdot \sum_{t=1}^T \Pr\left(\theta_2(t) > \mu_2 + \frac{\Delta}{2}, k_2(t) \geq L\right).
+\end{equation*}
+
+Bounding the sum of probabilities is straightforward and we omit the details.
+It remains to bound the first expectation. 
+Conditioned on $s(j)$, we have
+\begin{equation*}
+\begin{aligned}
+    \E \left[ X\left(j, s(j), y\right) \wedge T \mid s(j)\right] &\leq \E \left[ X\left(j, s(j), y\right) \mid s(j)\right] \wedge T\\
+    &= \left[\frac{1}{F^B_{j+1, y}(s(j))} - 1\right] \wedge T. 
+\end{aligned}
+\end{equation*}
+For large $j$, $s(j)$ can be bounded below using concentration inequality.
+For small $j$, one explicitly bound 
+\begin{equation*}
+    \E \left[\frac{1}{F^B_{j+1, y}(s(j))} - 1\right] = \sum_{s=0}^{j} \frac{f_{j,\mu_1}^B(s)}{F_{j+1, y}^B(s)} - 1 = \sum_{s=\lceil y(j+1)\rceil}^j \frac{f_{j, \mu_1}^B(s)}{F_{j+1, y}^B(s)} + \sum_{s=0}^{\lceil y(j+1)\rceil-1} \frac{f_{j, \mu_1}^B(s)}{F_{j+1, y}^B(s)} - 1,
+\end{equation*}
+where $f_{j,\mu_1}^B$ denotes the pmf of the $\operatorname{Binomial}(j, \mu_1)$ distribution. We omit the details here, as it is mostly ad hoc calculations. 
+
+Following the above derivation, we eventually arrive at the bound
+$$
+\mathbb{E}[\mathcal{R}(T)]=\mathbb{E}\left[\Delta \cdot k_2(T)\right] \leq\left(\frac{40 \ln T}{\Delta}+\frac{48}{\Delta^3}+18 \Delta\right)
+$$
+
+\newpage
+
+\section{Thompson sampling for \texorpdfstring{$N$}{N}-armed bandit}
+
+Before we dive into the proof, I want to remark that the following two papers on Thompson sampling are some of the worst written papers I have ever read. 
+
+\begin{table}[h]
+    \centering
+    \renewcommand{\arraystretch}{1.2} % Adjust row height
+    \begin{tabular}{c p{12cm}}
+        \hline
+        \textbf{Notations} & \textbf{Description} \\ 
+        \hline
+        $I_j$ & The interval between the $j$th and $(j+1)$th plays of the first arm. \\
+        $M(t)$ & The event $M(t): \theta_1(t)>\max _{i \in C(t)} \mu_i+\frac{\Delta_i}{2}$
+        \\ 
+        $\gamma_j$ & $\left|\left\{t \in I_j: \mathbbm{1}(M(t)) = 1\right\}\right|$. \\
+        $I_j(\ell)$ & The sub-interval of $I_j$ between the $(\ell-1)$th and $\ell$th occurrences of event $M(t)$ in $I_j$. \\
+        $V_j^{\ell, a}$ & Number of steps in $I_j(\ell)$, for which $a$ is the best saturated arm, i.e., $V_j^{\ell, a}=\left|\left\{t \in I_j(\ell): \mu_a=\max _{i \in C(t)} \mu_i\right\}\right|$. \\
+        
+        \hline
+    \end{tabular}
+    \caption{Notation table}
+    \label{tab:notation2}
+\end{table}
+
+In this proof, we introduce the concept of saturated and unsaturated arms. An arm $i \neq 1$ is in the saturated set $C(t)$ at time $t$, if it has been played at least $L_i := \frac{24 \log T}{\Delta_i^2}$ times before time $t$. 
+For the set of saturated arms, it is not hard to show that their $\theta_i(t)$ tightly concentrated around their means, namely, 
+$$
+E(t): \quad\left\{\theta_i(t) \in\left[\mu_i-\Delta_i / 2, \mu_i+\Delta_i / 2\right], \forall i \in C(t)\right\} .
+$$
+holds with high probability. 
+Regrets from the arms in the unsaturated set can be bound easily, since they get selected no more than $L_i$ times. 
+
+At step $t$, a saturated arm $i$ can be played only if $\theta_i(t) \geq \theta_1(t)$. 
+\begin{itemize}
+    \item When $M(t)$ holds, the saturated arm $i$ can be played only if $\theta_i(t) > \mu_i + \Delta_i / 2$, namely, the event $E(t)$ does not hold.
+    \item Otherwise, the saturated arm can be played and the number of plays is upper bounded by $\sum_{\ell=1}^{\gamma_j+1} |I_j(\ell)|$. 
+\end{itemize}
+ Thus, unless the high probability event $E(t)$ is violated, $M(t)$ denotes a play of an unsaturated arm at time $t$, and $\gamma_j$ essentially denotes the number of plays of unsaturated arms in interval $I_j$. The number of plays of saturated arms in interval $I_j$ is then at most 
+\begin{equation*}
+    \sum_{\ell=1}^{\gamma_j+1} \left|I_j(\ell)\right| + \sum_{t \in I_j} \mathbbm{1}\left(E(t)^c\right). 
+\end{equation*}
+Consider the case when $C(t)$ is nonempty otherwise, the event $M(t)$ always holds. The interval $I_j(\ell)$ is covered by $V_{j}^{\ell, a}$ and we have
+\begin{equation*}
+    |I_j(\ell)| = \sum_{a=2}^N V_j^{\ell, a}
+\end{equation*}
+If a saturated arm $i$ is played at time $t$ among one of the $V_j^{\ell,a}$ steps, then, either $E(t)$ is violated, or 
+$$
+\begin{aligned}
+&\mu_i+\Delta_i / 2 \geq \theta_i(t) \geq \theta_a(t) \geq \mu_a-\Delta_a / 2
+\end{aligned}
+$$
+which implies that
+$$
+\begin{aligned}
+&\Delta_i=\mu_1-\mu_i \leq \mu_1-\mu_a+\frac{\Delta_a}{2}+\frac{\Delta_i}{2} \Rightarrow \Delta_i \leq 3 \Delta_a .
+\end{aligned}
+$$
+
+
+
+
+
+
+
+
+
+
+
+
+\section{Thompson Sampling for Contextual Bandits with Linear Payoffs}
+
+We start with a few concentration inequalities. 
+Define $E^{\mu}(t)$ as the event that 
+\begin{equation*}
+    \forall i: \left|b_i(t)^\top \hat{\mu}(t) - b_i(t)^\top \mu\right| \leq \left[R \sqrt{d \log \left(\frac{t^3}{\delta}\right)} + 1\right] \sqrt{b_i(t)^\top B(t)^{-1} b_i(t)}. 
+\end{equation*}
+Recall that 
+\begin{equation*}
+    B(t) = I_d + \sum_{\tau=1}^{t-1} b_{a(\tau)}(\tau) b_{a(\tau)}(\tau)^\top 
+\end{equation*}
+and 
+\begin{equation*}
+\begin{aligned}
+    \muhat(t) &= B(t)^{-1} \left(\sum_{\tau=1}^{t-1} b_{a(\tau)}(\tau) r_{a(\tau)}(\tau)\right) \\
+    &= B(t)^{-1} \left(\sum_{\tau=1}^{t-1} b_{a(\tau)}(\tau) b_{a(\tau)}(\tau)^\top \mu\right) + B(t)^{-1} \left(\sum_{\tau=1}^{t-1} b_{a(\tau)}(\tau) \eta_{a(\tau), \tau}\right)\\
+    &= \mu - B(t)^{-1} \mu + B(t)^{-1} \left(\sum_{\tau=1}^{t-1} b_{a(\tau)}(\tau) \eta_{a(\tau), \tau}\right). 
+\end{aligned}
+\end{equation*}
+Therefore, we have
+\begin{equation*}
+\begin{aligned}
+    \left|b_i(t)^\top \hat{\mu}(t) - b_i(t)^\top \mu\right| &\leq \left|b_i(t)^\top B(t)^{-1} \mu \right| + \left|b_i(t)^\top B(t)^{-1} \sum_{\tau=1}^{t-1} b_{a(\tau)}(\tau) \eta_{a(\tau), \tau}\right| \\
+    &\leq \left\|b_i(t)\right\|_{B(t)^{-1}} \left\|\mu\right\|_{B(t)^{-1}} + \left\|b_i(t)\right\|_{B(t)^{-1}} \left\|\sum_{\tau=1}^{t-1} b_{a(\tau)}(\tau) \eta_{a(\tau), \tau}\right\|_{B(t)^{-1}}. 
+\end{aligned}
+\end{equation*}
+Noting that 
+\begin{equation*}
+    \left|\mu^\top B(t)^{-1} \mu\right| \leq \|\mu\|_2 \left\| B(t)^{-1} \right\| \leq \|\mu\|_2 \leq 1, 
+\end{equation*}
+we have
+\begin{equation*}
+\begin{aligned}
+    \left|b_i(t)^\top \hat{\mu}(t) - b_i(t)^\top \mu\right| &\leq \left\|b_i(t)\right\|_{B(t)^{-1}} + \left\|b_i(t)\right\|_{B(t)^{-1}} \left\|\sum_{\tau=1}^{t-1} b_{a(\tau)}(\tau) \eta_{a(\tau), \tau}\right\|_{B(t)^{-1}}. 
+\end{aligned}
+\end{equation*}
+Taking $m_{\tau}$ to be $b_{a(\tau)}(\tau)$ and $\eta_{\tau}$ to be $\eta_{a(\tau), \tau}$ and applying Lemma~\ref{lem:self-norm}, we have
+\begin{equation*}
+    \left\|\sum_{\tau=1}^{t-1} b_{a(\tau)}(\tau) \eta_{a(\tau), \tau}\right\|_{B(t)^{-1}} \leq R \sqrt{d \log \left(\frac{t}{\delta}\right)}
+\end{equation*}
+holds with probability at least $1 - \delta$. 
+Thus, it follows that with probability at least $1 - \delta/t^2$, the event $E^\mu(t)$ holds. 
+
+Define $E^{\theta}(t)$ as the event that 
+\begin{equation*}
+    \forall i:\left|b_i(t)^\top \tilde{\mu}(t)-b_i(t)^\top \hat{\mu}(t)\right| \leq \min \left\{\sqrt{4 d \log (t)}, \sqrt{4 \log (t N)}\right\} R \sqrt{9 d \log \left(\frac{t}{\delta}\right)} s_i(t) .
+\end{equation*}
+Set $v_t = R \sqrt{9 d \log \left(\frac{t}{\delta}\right)}$. 
+We have with probability at least $1 - t^{-2}$, 
+\begin{equation*}
+\begin{aligned}
+    \left|b_i(t)^\top \tilde{\mu}(t)-b_i(t)^\top \hat{\mu}(t)\right| &\leq v_t\left\|b_i(t)\right\|_{B(t)^{-1}} \left\|\frac{1}{v_t} B(t)^{1/2}\left(\mut(t) - \muhat(t)\right)\right\|_{2} \\
+    &= v_t s_i(t) \left\|\zeta\right\|_2 \leq v_t s_i(t) \sqrt{4 d \log t} 
+\end{aligned}
+\end{equation*}
+where $\zeta$ denotes a standard normal random vector. 
+Alternatively, we can bound $\left|\theta_i(t) - b_i(t)^\top \muhat(t)\right|$ for every $i$ by Gaussian concentration inequality and obtain 
+\begin{equation*}
+    \left|\theta_i(t)-b_i(t)^T \hat{\mu}(t)\right| \leq \sqrt{4 \log (N t)} s_i(t)
+\end{equation*}
+with probability at least $1 - 1/(N t^2)$. Taking a union bound, we obtain that $E^{\theta}(t)$ holds with probability at least $1-t^{-2}$. 
+
+We call an arm $i$ is saturated at time $t$, if $\Delta_i(t) > g_t s_i(t)$, and unsaturated otherwise. 
+Under both $E^{\theta}(t)$ and $E^{\mu}(t)$, by triangle inequality, we have
+\begin{equation*}
+    b_i(t)^\top \mu - g_t s_i(t) \leq \theta_i(t) \leq b_i(t)^\top \mu + g_t s_i(t).
+\end{equation*}
+Let $\bar{a}(t)$ denote the unsaturated arm with smallest $s_i(t)$, i.e.
+$$
+\bar{a}(t)=\arg \min _{i \notin C(t)} s_i(t).
+$$
+Combining with the fact that $\theta_{a(t)}(t) \geq \theta_i(t)$ for all $i$, we have 
+$$
+\begin{aligned}
+\Delta_{a(t)}(t)= & \Delta_{\bar{a}(t)}(t)+\left(b_{\bar{a}(t)}(t)^\top \mu-b_{a(t)}(t)^\top \mu\right) \\
+\leq & \Delta_{\bar{a}(t)}(t)+\left(\theta_{\bar{a}(t)}(t)-\theta_{a(t)}(t)\right) +g_t s_{t, \bar{a}(t)}+g_t s_{a(t)}(t) \\
+\leq & \Delta_{\bar{a}(t)}(t)+g_t s_{t, \bar{a}(t)}+g_t s_{a(t)}(t) \\
+\leq & g_t s_{t, \bar{a}}(t)+g_t s_{t, \bar{a}(t)}+g_t s_{a(t)}(t)
+\end{aligned}
+$$
+
+Using anti-concentration of Gaussian random variable $\theta_{a^*(t)}$, one has 
+$$
+\Pr\left(\theta_{a^*(t)}(t)>b_{a^*(t)}(t)^\top \mu \mid \mathcal{F}_{t-1}\right) \geq \frac{1}{4e\sqrt{\pi}}. 
+$$
+
+
+Since $E^{\mu}(t)$ happens with high probability, we only need to focus on $\operatorname{regret}^{\prime}(t)=\operatorname{regret}(t) \cdot \mathbbm{1}\left(E^\mu(t)\right)$. 
+Under $E^\mu(t)$, every arm is close to its expectation. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section{Action-centered contextual bandit}
+
+\begin{table}[h]
+    \centering
+    \renewcommand{\arraystretch}{1.2} % Adjust row height
+    \begin{tabular}{c p{12cm}}
+        \hline
+        \textbf{Notations} & \textbf{Description} \\ 
+        \hline
+        $\bar{s}_t \in \R^{d'}$ & Context vectors.\\
+        $s_{t,a_t} \in \R^d$ & State vector, a function of $a_t$ and $\bar{s}_t$.\\
+        $\calH_{t-1}$ & History of arms played, states and rewards, i.e., $$\mathcal{H}_{t-1}=\left\{a_\tau, \bar{s}_\tau, r_\tau\left(\bar{s}_\tau, a_\tau\right), i=1, \ldots, N, \tau=1, \ldots, t-1\right\}.$$\\
+        $\pi(a,t)$ & Probability of playing arm $a$ at time $t$. \\
+        $\hat{r}_t(\bar{a}_t)$ & $\left(I\left(a_t>0\right)-\pi_t\right) r_t\left(a_t\right)$. \\
+        $\hat{b}$ & $\sum_{t=1}^T\left(I\left(a_t>0\right)-\pi_t\right) s_{t, \bar{a}_t} \hat{r}_t\left(a_t\right)$.\\
+        $B$ & $I+\sum_{t=1}^T \pi_t\left(1-\pi_t\right) s_{t, \bar{a}_t} s_{t, \bar{a}_t}^\top$. \\
+        $z_{t,a}$ & $\sqrt{s_{t, a}^\top B(t)^{-1} s_{t, a}}$.  \\
+        $\ell(T)$ & $R \sqrt{d \log \left(T^3\right) \log (1 / \delta)}+1$. \\
+        $v$ & $R \sqrt{\frac{24}{\epsilon} d \log (1 / \delta)}$.\\
+        $g(T)$ & $\sqrt{4 d \log (T d)} v+\ell(T)$. \\
+        $\theta', \tilde{\theta}$ & Random samples from $\mathcal{N}\left(\hat{\theta}, v^2 B^{-1}\right)$. \\
+        $E^{\mu}(t)$ & The event that for all $\bar{a} \in [N]$, $\left|s_{t, \bar{a}}^\top \hat{\theta}_t-s_{t, \bar{a}}^\top \theta\right| \leq \ell(T) z_{t, \bar{a}}$. \\
+        $E^{\theta}(t), E^{\theta}_0(t)$ & The event that $\left|s_{t, \bar{a}}^T \tilde{\theta}_t-s_{t, \bar{a}}^T \hat{\theta}_t\right| \leq \sqrt{4 d \log (T d)} v z_{t, \bar{a}}$, for all $\bar{a} \in [N]$\\
+        \hline
+    \end{tabular}
+    \caption{Notation table}
+    \label{tab:notation3}
+\end{table}
+
+Consider a contextual bandit with a baseline (zero) action and $N$ non-baseline arms. At each time $t$, a context vector $\bar{s}_t \in \R^{d'}$ is observed, an action $a_t \in \{0,1,\cdots, N\}$ is chosen, and a reward $r_t(a_t)$ is observed. The state vector $s_{t,a_t}$ is a function of $a_t$ and $\bar{s}_t$. Assume that the context vectors are chosen by an adversary on the basis of the history $\calH_{t-1}$ of arms $a_\tau$ played, states $\bar{s}_{\tau}$, and rewards $r_\tau(\bar{s}_{\tau}, a_\tau)$ received up to time $t-1$, i.e.
+\begin{equation*}
+    \calH_{t-1} = \{a_\tau, \bar{s}_\tau, r_\tau(\bar{s}_\tau, a_\tau), i\in[N], \tau \in [t-1]\}. 
+\end{equation*}
+
+The nice thing of being in a bandit setting is that we have access to the assignment probabilities and we can avoid making assumptions required in the causal inference setting. 
+The conditional expectation of $\left(I\left(a_t>0\right)-\pi_t\right) r_t\left(a_t\right)$ is given by
+\begin{equation*}
+    \begin{aligned}
+\mathbb{E}\left[\left(I\left(a_t>0\right)-\pi_t\right) r_t\left(a_t\right) \mid \mathcal{H}_{t-1}, \bar{a}_t, \bar{s}_t\right] & =\pi_t\left(1-\pi_t\right) r_t(\bar{a})-\left(1-\pi_t\right) \pi_t r_t(0) \\
+& =\pi_t\left(1-\pi_t\right)\left(r_t\left(\bar{a}_t\right)-r_t(0)\right)
+\end{aligned}
+\end{equation*}
+This observation leads to the optimization problem
+\begin{equation*}
+\begin{aligned}
+\sum_{t=1}^T & \pi_t\left(1-\pi_t\right)\left(\hat{r}_t\left(\bar{a}_t\right) /\left(\pi_t\left(1-\pi_t\right)\right)-\theta^\top s_{t, \bar{a}_t}\right)^2+\|\theta\|_2^2 \\
+& =\sum_{t=1}^T \left[\frac{\left(\hat{r}_t\left(\bar{a}_t\right)\right)^2}{\pi_t\left(1-\pi_t\right)}-2 \hat{r}_t\left(\bar{a}_t\right) \theta^\top s_{t, \bar{a}_t}+\pi_t\left(1-\pi_t\right)\left(\theta^\top s_{t, \bar{a}_t}\right)^2\right] + \|\theta\|_2^2 \\
+& =c-2 \theta^\top \hat{b}+\theta^\top B \theta+\|\theta\|_2^2.
+\end{aligned}
+\end{equation*}
+The selection probability $\pi_t$ is given by
+\begin{equation*}
+    \pi_t=\mathbb{P}\left(a_t>0\right)=\max \left(\pi_{\min }, \min \left(\pi_{\max }, \mathbb{P}\left(s_{t, \bar{a}}^\top \tilde{\theta}>0\right)\right)\right).
+\end{equation*}
+We analyze the regret 
+\begin{equation*}
+    \calR(T) = \sum_{t=1}^T \left(\pi_t^* s_{t, \bar{a}_t^*}^\top \theta-\pi_t s_{t, \bar{a}_t}^\top \theta\right) \leq \underbrace{\sum_{t=1}^T\left(\pi_t^*-\pi_t\right)\left(s_{t, \bar{a}_t}^\top \theta\right)}_I+\underbrace{\sum_{t=1}^T\left(s_{t, \bar{a}_t^*}^\top \theta-s_{t, \bar{a}_t}^\top \theta\right)}_{II}
+\end{equation*}
+
+
+
+
+\section{RoME}
+
+There are some notational abusing issues. The expectation $\mathbb{E}[\cdot \mid s, \bar{a}]$ should be read as shorthand for:
+$$
+\mathbb{E}\left[\cdot \mid S_{i, t}=s, A_{i, t} \in\{0, \bar{a}\}, H_{i, t}\right]
+$$
+
+Compared to prior literature, RoME further consider subject-specific and time-specific random effects.
+The reward is modeled as 
+$$
+R_{i, t}=g_t\left(S_{i, t}\right)+x\left(S_{i, t}, A_{i, t}\right)^{\top} \theta_{i, t} \cdot \mathbf{1}\left\{A_{i, t}>0\right\}+\epsilon_{i, t},
+$$
+where 
+$$
+\theta_{i, t}=\theta_{\text {shared }}+\theta_i^{\text {user }}+\theta_t^{\text {time }}.
+$$
+Due to the staged recruitment scheme assumption, there are $K$ users and $K$ time slots. 
+
+
+
+\section{Non-stationary Bandits}
+
+A stationary action model might make the historical data void or hard to justify any theoretical novelty. 
+There are a few more flexible models. 
+
+
+
+
+
+
+
+
+
+
+\section{Laplacian-Regularized Graph Bandits}
+
+Consider a linear bandit with $m$ arms and $n$ users. Each arm is described by a feature vector $\vx$, each user is described by $\vtheta$. The payoff is given by
+$$
+y_t=\mathbf{x}_t^T \boldsymbol{\theta}_{i_t}+\eta_t.
+$$
+To estimate the paramter $\mTheta$ at time $t$, make use of 
+$$
+\hat{\boldsymbol{\Theta}}_t=\arg \min _{\boldsymbol{\Theta} \in \mathbb{R}^{n \times d}} \sum_{i=1}^n \sum_{\tau \in \mathcal{T}_{i, t}}\left(\mathbf{x}_\tau^T \boldsymbol{\theta}_i-y_\tau\right)^2+\alpha \operatorname{tr}\left(\boldsymbol{\Theta}^T \mathcal{L} \boldsymbol{\Theta}\right)
+$$
+
+
+
+
+
+
+
+
+\section{Semi-parametric inference based on
+adaptively collected data}
+
+$$
+y=g\left(\left\langle x, \theta^*\right\rangle+h^*(z)\right)+\varepsilon,
+$$
+Here $g$ is a known link function. 
+We observe a collection of $n$ samples of the form $\left(x_i, y_i, z_i\right)$ for $i=1, \ldots, n$.
+
+
+
+
+
+\section{Contextual Linear Bandits under Noisy Features}
+
+At each time $t$, the true feature $z_{a,t} \in \R^d$ for an arm $a$ in the set of arms is generated randomly encoding context, and the mean reward is $z_{a,t}^\top \theta^\star$ where $\theta^\star \in \R^d$ is a latent parameter. An agent can only observe a noisy feature vector $x_{a,t} \in \R^d$ rather than $z_{a,t}$, which is defined as $x_{a,t} = (z_{a,t} + \varepsilon_{a,t}) \circ m_{a,t}$. 
+
+
+
+\section{Posterior Sampling}
+
+Assume that $Y_{1:T} \sim p^\star$, where $p^\star$ is exchangeable. 
+%This is a strong assumption, since even independent does not implies exchangeability. 
+This assumption is basically i.i.d., except that the authors want to make use of a sequential model or something. 
+Let $\pi$ denote an action selection algorithm. 
+Let the per-user regret be 
+$$
+    \Delta\left(\pi ; p^*\right):=\mathbb{E}_{p^*, \pi}\left[\max _{a \in \mathcal{A}^{\text {new }}}\left\{\frac{1}{T} \sum_{t=1}^T R\left(Y_t^{(a)}\right)\right\}-\frac{1}{T} \sum_{t=1}^T R\left(Y_t^{\left(A_t\right)}\right)\right] .
+$$
+This definition relies on the exchangeability assumption. 
+Moreover, this is a context-free setting. 
+Without any additional context, exchangeability seems reasonable. 
+
+They also have a contextual version. 
+In this setting, the contexts are drawn i.i.d.~from an unknown distribution $P_X$. 
+The pairs $(X_1, Y_1), \cdots, (X_T, Y_T)$ are assumed to be exchangeable. 
+
+
+
+
+\section{Noisy Contextual Linear Bandit}
+
+Here, we consider a more general setting. 
+Suppose that $Y_1, Y_2, \cdots, Y_T$ follows certain distribution. 
+%Let us consider the simplest setting first.
+%\begin{assumption}
+%    $(S_1, Y_1), \cdots, (S_T, Y_T)$ are exchangeable.  
+%\end{assumption}
+Intuitively, we would like to learn the distribution $Y_T \mid S_{1:T}$, so that we can sample from this distribution and use it as the current context. 
+
+The first step is to investigate the log-likelihood of the data under the fitted distribution $p_{\beta}$ vesus the ground truth $p^\star$. 
+Suppose that $Y_1, Y_2, \cdots, Y_T$ follows $p^\star$. 
+Our goal is to bound
+\begin{equation*}
+    \E \sup_{g: \|g\|_{\infty} \leq 1} \left\{\E \left[g(Y_{1:T}) \mid S_{1:T}\right] - \E_{p_\beta} \left[ g(Y_{1:T}) \mid S_{1:T} \right] \right\} %\leq \frac{1}{\sqrt{2}} \left[L^\star(p_\beta) - L^\star(p^\star)\right]^{1/2}
+\end{equation*}
+
+\begin{proof}
+    Fixing $S_{1:T} = s_{1:T}$ first. 
+    \begin{equation*}
+    \begin{aligned}
+        &\sup_{g: \|g\|_{\infty} \leq 1} \left\{\E \left[g(Y_{1:T}) \mid S_{1:T} = s_{1:T}\right] - \E_{p_\beta} \left[ g(Y_{1:T}) \mid S_{1:T} = s_{1:T} \right] \right\} \\
+        &~\stackrel{(i)}{\leq} d_{\mathrm{TV}}\left(\Pr_{p^\star}\left(Y_{1:T} \mid S_{1:T} = s_{1:T}\right), \Pr_{p_\beta}\left(Y_{1:T} \mid S_{1:T} = s_{1:T}\right)\right)\\
+        &~\stackrel{(ii)}{\leq} \sqrt{\frac{1}{2} \KL\left(\Pr_{p^\star}\left(Y_{1:T} \mid S_{1:T} = s_{1:T}\right) \| \Pr_{p_\beta}\left(Y_{1:T} \mid S_{1:T} = s_{1:T}\right)\right)}
+    \end{aligned}
+    \end{equation*}
+    where $(i)$ holds by the definition of total variation, $(ii)$ holds by Pinsker's inequality. 
+    By Jensen's inequality, we have 
+    \begin{equation*}
+    \begin{aligned}
+        &\E \sup_{g: \|g\|_{\infty} \leq 1} \left\{\E \left[g(Y_{1:T}) \mid S_{1:T}\right] - \E_{p_\beta} \left[ g(Y_{1:T}) \mid S_{1:T} \right] \right\} \\
+        &~\leq \sqrt{\frac{1}{2} \E \KL\left(\Pr_{p^\star}\left(Y_{1:T} \mid S_{1:T} = s_{1:T}\right) \| \Pr_{p_\beta}\left(Y_{1:T} \mid S_{1:T} = s_{1:T}\right)\right)}\\
+        &~= \sqrt{\frac{1}{2} \KL\left(\Pr_{p^\star}\left(Y_{1:T} \mid S_{1:T} \right) \| \Pr_{p_\beta}\left(Y_{1:T} \mid S_{1:T} \right)\right)}.
+    \end{aligned}
+    \end{equation*}
+\end{proof}
+
+%We have 
+%\begin{equation*}
+%\begin{aligned}
+%    &\ell_{n}(p_\beta) - \ell_n(p^\star) \\
+%    &~~= \E \left[- \sum_{t=1}^n \log p_{\beta} \left(Y_t \mid S_{1:t}\right)\right] - \E \left[-\sum_{t=1}^n \log p^\star \left(Y_t \mid S_{1:t}\right)\right] \\
+%    &~~= \sum_{t=1}^n \E_{Y_t \mid S_{1:t} \sim p^\star} \left[-\log \left(\frac{p_{\beta}(Y_t \mid S_{1:t})}{p^\star(Y_t \mid S_{1:t})}\right)\right]\\
+%    &~~= \sum_{t=1}^n \KL\left(\Pr_{p^\star}\left(Y_t \mid S_{1:t}\right) \| \Pr_{p_\beta}\left(Y_t \mid S_{1:t}\right)\right)
+%\end{aligned}
+%\end{equation*}
+Next, we consider the reward given by
+\begin{equation*}
+    R(t, A_t) := \left\langle \thetastar, \phi(Y_t, A_t) \right\rangle + \eta_t,
+\end{equation*}
+where $Y_t$ is unobserved, $\phi$ is a known function. 
+Define the conditional expectation
+\begin{equation*}
+    \psi^\star_a(S_{1:t}) := \E \left[\phi(Y_t, a) \mid S_{1:t}\right], \quad \psi^{(\beta)}_a(S_{1:t}) := \E_{p_\beta} \left[\phi(Y_t, a) \mid S_{1:t}\right].
+\end{equation*}
+Suppose that 
+$$
+\sup_{y} \max_{a \in \calA}\|\phi(y, a)\|_{\infty} \leq 1
+$$
+and 
+$$
+\sup_{y} \max_{a\in \calA} \|\phi(y, a)\|_2 \leq B
+$$
+By previous analysis, we have 
+\begin{equation*}
+    \left\|\psi^\star_a(s_{1:t}) - \psi^{(\beta)}_a(s_{1:t})\right\|_{\infty} \leq \sqrt{\frac{1}{2} \KL\left(\Pr_{p^\star}\left(Y_{1:t} \mid S_{1:t} = s_{1:t}\right) \| \Pr_{p_\beta}\left(Y_{1:t} \mid S_{1:t} = s_{1:t}\right)\right)} =: \sqrt{D_t}. 
+\end{equation*}
+Suppose that the oracle has access to $p^\star$ while we have access to an approximation $p_\beta$. 
+First, we compare the reward obtained from running $\LinUCB$ under $p^\star$ and $p_\beta$. 
+We aim to show that the regret can be well controlled.
+Let $x_{t} := x_{t,A_t}$.
+The Algorithm is given as follows:
+\begin{algorithm}[H]
+\begin{algorithmic}[1]
+\REQUIRE $\lambda, \{\gamma_t\}_{t=1}^T$
+\FOR{$t = 1$ to $T$}
+\STATE $x_{t,a} \gets \psi_a^{(\beta)}(S_{1:t})$, $\Sigma_t \gets \lambda I + \sum_{\tau=1}^{t-1} x_\tau x_{\tau}$, $\thetahat_t \gets \Sigma_t^{-1} \sum_{\tau=1}^{t-1} r_{\tau} x_{\tau}$. 
+\STATE Update
+$$
+\BALL_t \gets \left\{ \mu \mid \left(\thetahat_t - \mu\right)^\top \Sigma_t \left(\thetahat_t - \mu\right) \leq \gamma_t\right\}. 
+$$
+\STATE Choose action 
+$$
+A_t=\operatorname{argmax}_{a \in \calA} \max _{\mu \in \BALL_t} \mu^\top x_{t,a}
+$$
+with ties broken arbitrarily. 
+\STATE Observe payoff $r_t \in [0, 1]$
+\ENDFOR
+\end{algorithmic}
+\caption{LinUCB}
+\label{alg:seq}
+\end{algorithm}
+
+Suppose that $\theta \in \BALL_t$.
+Let $\tilde{\theta}_t \in \BALL_t$ denote the vector which maximizes the inner product $\mu^\top x_{t,\Astar_t}$, then
+\begin{equation*}
+    \thetahat_t^\top x_t = \max_{a \in \calA} \max_{\mu \in \BALL_t} \mu^\top x_{t,a} \geq \tilde{\theta}_t^\top x_{t, \Astar_t} \geq \theta^\top \xstar_t + \theta^\top (x_{t,\Astar_t} - \xstar_t). 
+\end{equation*}
+Define the regret at time $t$ to be 
+\begin{equation*}
+    \regret_t = r(t, \Astar_t) - r(t, A_t) = \theta^\top \xstar_t - \theta^\top x_t \leq (\thetahat_t - \theta)^\top x_t - \theta^\top \left(x_{t,\Astar_t} - \xstar_t\right). 
+\end{equation*}
+For any $\mu \in \BALL_t$, 
+\begin{equation*}
+    \left|(\mu - \thetahat_t)^\top x\right| \leq \sqrt{\gamma_t x^\top \Sigma_t^{-1} x}. 
+\end{equation*}
+It follows that 
+\begin{equation*}
+    \regret_t \leq \sqrt{\gamma_t x_t^\top \Sigma_t^{-1} x_t} - \theta^\top \left(x_{t,\Astar_t} - \xstar_t\right). 
+\end{equation*}
+Thus, 
+\begin{equation*}
+\begin{aligned}
+     \sum_{t=1}^T \regret_t^2 &\leq 2\sum_{t=1}^T \gamma_t \min\left\{x_t^\top \Sigma_t^{-1} x_t, 1\right\} + 2\sum_{t=1}^T \left[\theta^\top \left(x_{t,\Astar_t} - \xstar_t\right)\right]^2\\
+    &\leq 2\sum_{t=1}^T \gamma_t \min\left\{x_t^\top \Sigma_t^{-1} x_t, 1\right\} + 2 d \sum_{t=1}^T D_t. 
+\end{aligned}
+\end{equation*}
+Following standard argument, we have 
+\begin{equation*}
+\begin{aligned}
+    \sum_{t=1}^{T} \gamma_t \min\left\{x_t^\top \Sigma_t^{-1} x_t, 1\right\} &\leq 2\gamma_T \sum_{t=1}^T \log\left(1 + x_t^\top \Sigma_t^{-1} x_t\right) \\
+    &\leq 4\gamma_{T} \log\left(\det \Sigma_{T} / \det \Sigma_1 \right) \\
+    &= 4 \gamma_T d \log\left(1+\frac{T B^2}{d \lambda}\right).
+\end{aligned}
+\end{equation*}
+Hence, 
+\begin{equation*}
+\begin{aligned}
+     \sum_{t=1}^T \regret_t^2 
+    &\leq 8 \gamma_T d \log\left(1+\frac{T B^2}{d \lambda}\right) + 2 d \sum_{t=1}^T D_t
+\end{aligned}
+\end{equation*}
+and we have 
+\begin{equation*}
+    \sum_{t=1}^T \regret_t \leq \sqrt{T \sum_{t=1}^T \regret_t^2} \leq \sqrt{8T\gamma_T d \log \left(1 + \frac{T B^2}{d \lambda}\right) + 2dT \sum_{t=1}^T D_t}. 
+\end{equation*}
+It remains to choose a sequence of suitable $\{\gamma_t\}_{t=1}^T$ so that we have $\theta \in \BALL_t$ for all $t \in [T]$ with high probability.   
+
+Let $\xstar_{t,a} := \psi^\star_a(S_{1:t})$.
+At time $t$, we have  
+$$
+r_t = \theta^\top x_t + \theta^\top \left(\xstar_{t,A_t} - x_t\right) + \underbrace{\theta^\top \left(\xstar_{t,A_t} - \phi(Y_t, A_t)\right)}_{\varepsilon_t} + \eta_t.
+$$
+It follows that 
+\begin{equation*}
+\begin{aligned}
+    \thetahat_t - \theta &= \Sigma_t^{-1} \sum_{\tau=1}^{t-1} r_{\tau} x_{\tau} - \theta \\
+    &= \left[\Sigma_t^{-1} \left(\sum_{\tau=1}^{t-1} x_{\tau} x_{\tau}^\top\right) - 1\right] \theta + \Sigma_t^{-1} \sum_{\tau=1}^{t-1} x_{\tau} (\xstar_{\tau,A_\tau} - x_\tau)^\top \theta + \Sigma_t^{-1} \sum_{\tau=1}^{t-1} x_{\tau} (\varepsilon_\tau + \eta_\tau)\\
+    &= -\lambda \Sigma_t^{-1} \theta + \Sigma_t^{-1} \sum_{\tau=1}^{t-1} x_{\tau} (\xstar_{\tau,A_\tau} - x_\tau)^\top \theta + \Sigma_t^{-1} \sum_{\tau=1}^{t-1} x_{\tau} (\varepsilon_\tau + \eta_\tau)\\
+\end{aligned}
+\end{equation*}
+To ensure that $\varepsilon_t$ is a martingale difference sequence. 
+Assume that the distribution of $Y_t$ is independent of $(A_1^{t-1}, r_{1}^{t-1})$ conditioned on $S_1^{t}$. 
+%This assumption is reasonable, since if we follow the noisy feature setting, $Y_t$ would be independent of the previous observations. 
+Under this assumption,
+\begin{equation*}
+    \E \left[\phi(Y_t, a) \mid A_{1:t-1}, r_{1:t-1}, S_{1:t}\right] = \xstar_{t,a}
+\end{equation*}
+Since $A_t$ is a function of $(A_{1:t-1}, r_{1:t-1}, S_{1:t})$, for any $a \in \calA$
+\begin{equation*}
+    \E \left[\phi(Y_t, a) \mid A_{1:t}, r_{1:t-1}, S_{1:t}\right] = \E \left[\phi(Y_t, a) \mid A_{1:t-1}, r_{1:t-1}, S_{1:t}\right] = \xstar_{t,a},
+\end{equation*}
+taking $a = A_t$ yields the desired result for $\varepsilon_t$.
+
+The only term different from the vanilla $\LinUCB$ is that we have an extra term 
+$$
+\Sigma_t^{-1} \sum_{\tau=1}^{t-1} x_{\tau} (\xstar_{\tau,A_\tau} - x_\tau)^\top \theta.
+$$
+Using the crude bound
+\begin{equation*}
+    \left|(\xstar_{\tau,A_\tau} - x_\tau)^\top \theta\right| \leq \left\|\xstar_{\tau,A_\tau} - x_\tau\right\|_2 \leq \sqrt{d D_t} \leq \sqrt{d D_{\max}} ,
+\end{equation*}
+it follows that 
+\begin{equation*}
+\begin{aligned}
+    &\left|\left(\sum_{\tau=1}^{t-1} x_{\tau}^\top (\xstar_{\tau,A_\tau} - x_\tau)^\top \theta\right) \Sigma_t^{-1} \left(\sum_{\tau=1}^{t-1} x_{\tau} (\xstar_{\tau,A_\tau} - x_\tau)^\top \theta\right)\right| \\ 
+    &~\leq d D_{\max} \left|\left(\sum_{\tau=1}^{t-1} x_{\tau}\right)^\top \Sigma_t^{-1} \left(\sum_{\tau=1}^{t-1} x_{\tau}\right) \right|.
+\end{aligned}
+\end{equation*}
+We note that 
+\begin{equation*}
+\begin{aligned}
+    \left|\left(\sum_{\tau=1}^{t-1} x_{\tau}\right)^\top \Sigma_t^{-1} \left(\sum_{\tau=1}^{t-1} x_{\tau}\right) \right| &= \left\|\sum_{\tau=1}^{t-1} \Sigma_{t}^{-1/2} x_\tau\right\|_2^2\\
+    &\leq (t-1) \sum_{\tau=1}^{t-1} x^\top_\tau \Sigma_{t}^{-1} x_\tau\\
+    &= (t-1) \tr\left(\Sigma_t^{-1} \sum_{\tau=1}^{t-1} x_\tau x^\top_{\tau}\right)\\
+    &= d(t-1) - \lambda (t-1) \tr\left(\Sigma^{-1}_t\right) \leq d(t-1). 
+\end{aligned}
+\end{equation*}
+
+Therefore, with probability at least $1 - \delta_{t}$, 
+\begin{equation*}
+\begin{aligned}
+    &\left\|\thetahat_t - \theta\right\|_{\Sigma_t^{-1}} \\
+    &~\leq \sqrt{\lambda} + (\sigma_{\eta} + \sigma_{\varepsilon})\sqrt{2 \log (\det(\Sigma_t)\det(\Sigma_1)^{-1} / \delta_t)} + d\sqrt{D_{\max}(t-1)} \\
+    &~\leq \sqrt{\lambda} + (\sigma_{\eta} + \sigma_{\varepsilon})\sqrt{2 \log \left[\left(1 + \frac{t B^2}{d \lambda}\right)^d/\delta_t\right]} + d\sqrt{D_{\max}(t-1)}. 
+\end{aligned}
+\end{equation*}
+It suffices to set $\delta_t := \delta (3/\pi^2)/t^2$.
+Hence, we can take 
+\begin{equation*}
+    \gamma_t := \underbrace{3\lambda_t + 6(\sigma_{\eta} + \sigma_{\varepsilon})^2 \log \left[4 t^2\left(1 + \frac{t B^2}{d \lambda}\right)^d/\delta\right]}_{\gamma^{(0)}_t} + 3d^2 D_{\max} t.
+\end{equation*}
+It follows that $\sum_{t=1}^T \regret_t$ is bounded by
+\begin{equation*}
+    \sqrt{2dT\sum_{t=1}^T D_t} + T D_{\max}^{1/2} \sqrt{24 d^3 \log \left(1 + \frac{T B^2}{d \lambda}\right)} + \sqrt{8 \gamma^{(0)}_T T d \log\left(1 + \frac{T B^2}{d \lambda}\right)} . 
+\end{equation*}
+%Consider the decomposition
+%\begin{equation*}
+%    R(t,A_t) = \left\langle \thetastar, \phi(Y_t, A_t) - \psi_{A_t}(S_1^{t}) \right\rangle  + \left\langle \thetastar, \psi_{A_t}(S_1^t) - \psihat_{A_t}(S_1^{t}) \right\rangle + \left\langle \thetastar, \psihat_{A_t}(S_1^{t}) \right\rangle + \eta_t.
+%\end{equation*}
+%Due to the inherent randomness, $\left\langle \thetastar, \phi(Y_t, A_t) - \psi_{A_t}(S_1^{t}) \right\rangle$ is a term cannot be controlled. 
+%We will compare the regret with the oracle, which chooses action
+%\begin{equation*}
+%    \astar_t  = \arg \max_{a \in \calA} \left\langle \thetastar, \psi_a(S_1^t) \right\rangle
+%\end{equation*}
+%Define the regret at time $t$ to be
+%\begin{equation*}
+%    \regret_t := R(t, \astar_t) - R(t, a_t).
+%\end{equation*}
+
+%We use the historical data $\left(Y^{(0)}_1, \cdots, Y^{(0)}_{T_0}\right)$ to fit a working distribution $p_\beta(\cdot \mid S_{1}^t)$.
+%Consider the difference
+%\begin{equation*}
+%    \psi_{A_t}(S_1^t) - \psihat_{A_t}(S_1^{t}) = \E \left[\phi(Y_t, a) \mid S_1^{t}\right] - \E_{p_\beta} \left[\phi(Y_t, a) \mid S_1^{t}\right]
+%\end{equation*}
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section{LinUCB}
+
+\begin{algorithm}[H]
+\begin{algorithmic}[1]
+\REQUIRE $\lambda, \beta_t$
+\FOR{$t = 1$ to $T$}
+\STATE Choose action $a_t=\operatorname{argmax}_{a \in \calA} \max _{\mu \in \operatorname{BALL}_t} \mu^\top a$ with ties broken arbitrarily. 
+\STATE Observe payoff $r_t \in [0, 1]$
+\STATE Update $\operatorname{BALL}_{t+1}$. 
+\ENDFOR
+\end{algorithmic}
+\caption{LinUCB}
+\label{alg:seq}
+\end{algorithm}
+
+The confidence ball is defined as 
+\begin{equation*}
+\operatorname{BALL}_{t} = \left\{ \mu \mid \left(\muhat_t - \mu\right)^\top \Sigma_t \left(\muhat_t - \mu\right) \leq \beta_t\right\},
+\end{equation*}
+where 
+$$
+\Sigma_t=\lambda I+\sum_{\tau=0}^{t-1} x_\tau x_\tau^{\top}, \text { with } \Sigma_0=\lambda I.
+$$
+We would want to understand the probability that $\mustar \in \operatorname{BALL}_{t}$
+We have
+\begin{equation*}
+\begin{aligned}
+    \muhat_{t} - \mustar &= \Sigma_t^{-1} \sum_{\tau=0}^{t-1} r_\tau x_\tau - \mustar\\
+    &= \Sigma_t^{-1} \sum_{\tau=0}^{t-1} \left(\mustar \cdot x_{\tau} + \eta_{\tau}\right) x_\tau - \mustar\\
+    &= - \lambda \Sigma_t^{-1} \mustar + \Sigma_t^{-1} \sum_{\tau=0}^{t-1} \eta_{\tau} x_{\tau}.
+\end{aligned}
+\end{equation*}
+It follows that 
+\begin{equation*}
+\begin{aligned}
+\sqrt{\left(\widehat{\mu}_t-\mu^{\star}\right)^{\top} \Sigma_t\left(\widehat{\mu}_t-\mu^{\star}\right)} & =\left\|\left(\Sigma_t\right)^{1 / 2}\left(\widehat{\mu}_t-\mu^{\star}\right)\right\| \\
+& \leq\left\|\lambda \Sigma_t^{-1 / 2} \mu^{\star}\right\|+\left\|\Sigma_t^{-1 / 2} \sum_{\tau=0}^{t-1} \eta_\tau x_\tau\right\|
+\end{aligned}
+\end{equation*}
+
+
+The regret at time $t$ is given by
+$$
+\operatorname{regret}_t=\mu^{\star} \cdot x^*-\mu^{\star} \cdot x_t.
+$$
+To bound the cumulative regret, it suffices to bound the sum of squares regret. 
+
+
+
+
+\section{Explore First, Exploit Next}
+
+Consider finitely many arms $a \in [K]$. Each is associated with an unknown probability distribution $v_a$ over $\R$. At each round $t \geq 1$, the player pulls the arm $A_t$ and get a real-valued reward $Y_t$ drawn independently at random according to the distribution $v_{A_t}$. A strategy $\psi$ associates an arm with the information gained in the past, possibly based on some auxiliary randomization; without loss of generality, this randomization is provided by $U_0, U_1, U_2, \cdots$. A strategy is a sequence $\psi = (\psi_{t})_{t \geq 0}$ of measurable functions, each of  which associates with the said past information, namely,
+\begin{equation*}
+    I_t = \left(U_0, Y_1, U_1, \cdots, Y_t, U_t\right),
+\end{equation*}
+an arm $\psi_t(I_t) = A_{t+1} \in [K]$. 
+
+\appendix
+
+\bibliographystyle{apalike}
+\bibliography{rl}
+
+\input{technical}
+
+\end{document}
+

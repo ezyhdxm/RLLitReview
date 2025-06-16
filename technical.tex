@@ -1,0 +1,143 @@
+\section{Martingale}
+
+We will revisit some classical definitions and results here. 
+The conditional expectation of $X$ given $\calF$ is any random variable $Y$ that has 
+\begin{itemize}
+    \item[(i)] $Y\in \calF$, i.e., is $\calF$ measurable
+    \item[(ii)] for all $A \in \calF$, $\int_{A} X dP = \int_{A} Y dP$.  
+\end{itemize}
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section{Martingale concentration inequalities}
+
+\begin{lemma} \label{lem:self-norm}
+    Let $(\calF_t)_{t\geq 0}$ be a filtration, $(m_t)_{t\geq 1}$ be an $\R^d$-valued stochastic process such that $m_t$ is $(\calF_{t-1})$-measurable, $(\eta_t)_{t\geq 1}$ be a real-valued martingale difference process such that $\eta_t$ is $(\calF_t)$-measurable. 
+For $t \geq 0$, define $\xi_t = \sum_{\tau=1}^t m_\tau \eta_{\tau}$ and $M_t = I_d + \sum_{\tau=1}^t m_\tau m_\tau^\top$, where $I_d$ is the $d$-dimensional identity matrix. Assume $\eta_t$ is conditionally $R$-sub-Gaussian. Then for any $\delta > 0$, $t \geq 0$, with probability at least $1 - \delta$, 
+\begin{equation*}
+    \left\|\xi_t\right\|_{M_t^{-1}} \leq R \sqrt{d \log \left(\frac{t+1}{\delta}\right)},
+\end{equation*}
+where $\|\xi_t\|_{M_t^{-1}} = \sqrt{\xi_t^\top M_t^{-1} \xi_t}$. 
+\end{lemma}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section{Information theory}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section{Semiparametric Statistics}
+
+The log-likelihood is denoted by 
+\begin{equation*}
+    \ell_{\theta}(x) = \log p_{\theta}(x), \quad \text{for } x \in \calX.
+\end{equation*}
+Suppose that $\theta \mapsto p_{\theta}(x)$ is differentiable at $\theta$ for all $x \in \calX$, we call $\dot{\ell}_\theta(x)$ the score function. 
+The Fisher information at $\theta$ is defined as 
+$$
+I(\theta) \equiv I_\theta=\mathbb{E}\left[\dot{\ell}_\theta(X) \dot{\ell}_\theta(X)^{\top}\right], \quad \text { where } X \sim P_\theta.
+$$
+
+An important result on the geometry of influence functions is given as below
+\begin{theorem}
+    Under some regular conditions, let the parameter of interest be $\psi(\theta)$, a $q$-dimensional function of the $k$-dimensional parameter $\theta (q < k)$ such that
+    \begin{equation*}
+        \frac{\partial}{\partial \theta} \psi(\theta) \equiv \dot{\psi}_\theta,
+    \end{equation*}
+    exists at the ground truth $\theta_0$. 
+    Also let $T_n$ be an asymptotically linear estimator with influence function $\varphi(X)$ such that $\mathbb{E}_\theta\left[\varphi(X)^{\top} \varphi(X)\right]$ exists at $\theta_0$. Then, if $T_n$ is regular, this will imply that
+$$
+\mathbb{E}\left[\varphi(X) \dot{\ell}_{\theta_0}(X)^{\top}\right]=\dot{\psi}_{\theta_0}
+$$
+\end{theorem}
+Suppose that $\theta \equiv (\psi, \eta)$. We can think of this as $\psi(\theta) \equiv \psi$ so that $\Gamma(\theta) \equiv \dot{\psi}_\theta=\left(I_q, 0_{q \times(k-q)}\right)$ is a $q \times k$ matrix.
+
+Let $X \sim P$ be a random variable. Let $\calH$ be the Hilbert space of mean-zero $q$-dimensional measurable functions of $X$ with finite second moments and the inner product
+\begin{equation*}
+    \left\langle h_1, h_2 \right\rangle := \E \left[h_1^\top h_2\right]
+\end{equation*}
+Let $v$ be an $r$-dimensional random function with mean zero and $\|v\| \leq \infty$. The linear subspace $\calU$ spanned by $v$ is given by
+\begin{equation*}
+    \mathcal{U}=\left\{B_{q \times r} v(X) \text { : where } B \in \mathbb{R}^{q \times r} \text { is any arbitrary matrix }\right\} .
+\end{equation*}
+The nuisance tangent space is the linear subspace spanned by the nuisance score vector $\dot{\ell}_{\theta_0}^{(2)}(X)$, i.e.,
+$$
+\Lambda:=\left\{B \dot{\ell}_{\theta_0}^{(2)}(X): \text { where } B \in \mathbb{R}^{q \times(k-q)} \text { is any arbitrary matrix }\right\} .
+$$
+
+To project an arbitrary element $h(X) \in \calH$ onto $\calU$, the projection must satisfy
+$$
+\left\langle h-B_0 v, B v\right\rangle=\mathbb{E}\left[\left\{h(X)-B_0 v(X)\right\}^{\top} B v(X)\right]=0 \quad \text { for all } B \in \mathbb{R}^{q \times r},
+$$
+implying
+$$
+B_0=\mathbb{E}\left[h(X) v(X)^{\top}\right]\left\{\mathbb{E}\left[v(X) v(X)^{\top}\right]\right\}^{-1}.
+$$
+Hence, the unique projection of $h(X) \in \mathcal{H}$ onto $\mathcal{U}$ is
+$$
+\Pi(h \mid \mathcal{U})=\mathbb{E}\left[h(X) v(X)^{\top}\right]\left\{\mathbb{E}\left[v(X) v(X)^{\top}\right]\right\}^{-1} v
+$$
+
+The efficient score is the residual of the score vector with respect to the parameter of interest after projecting it onto the nuisance tangent space, i.e.,
+$$
+\dot{\ell}_{\theta_0}^{\text {eff }}:=\dot{\ell}_{\theta_0}^{(1)}-\Pi\left(\dot{\ell}_{\theta_0}^{(1)} \mid \Lambda\right) .
+$$
+By the above projection formula, we have
+$$
+\Pi\left(\dot{\ell}_{\theta_0}^{(1)} \mid \Lambda\right)=\mathbb{E}\left[\dot{\ell}_{\theta_0}^{(1)}(X) \dot{\ell}_{\theta_0}^{(2)}(X)^{\top}\right]\left\{\mathbb{E}\left[\dot{\ell}_{\theta_0}^{(2)}(X) \dot{\ell}_{\theta_0}^{(2)}(X)^{\top}\right]\right\}^{-1} \dot{\ell}_{\theta_0}^{(2)} .
+$$
+When the parameter $\theta$ can be partitioned as $(\psi, \eta)$, where $\psi$ is the parameter of interest and $\eta$ is the nuisance parameter, then the efficient influence function can be written as 
+$$
+\varphi^{\mathrm{eff}}=\left\{\mathbb{E}\left[\dot{\ell}_{\theta_0}^{\mathrm{eff}}(X) \dot{\ell}_{\theta_0}^{\mathrm{eff}}(X)^{\top}\right]\right\}^{-1} \dot{\ell}_{\theta_0}^{\mathrm{eff}} .
+$$
