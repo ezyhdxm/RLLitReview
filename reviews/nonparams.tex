@@ -1,0 +1,36 @@
+Consider a simple two-arm setting
+$$
+\left(X_t, Y_t^{(1)}, Y_t^{(2)}\right), t=1,2, \ldots
+$$
+of independent random vectors, where $X_t$, $t = 1,2, \cdots$ is a sequence of i.i.d.~covariates in $\calX \subset \R^d$ with probability distribution $P_X$ and $Y_t^{(i)}$ denotes the random reward yielded by arm $i$ at time $t$.
+Suppose that 
+\begin{equation*}
+    \E [Y^{(i)}_t \mid X_t] = f^{(i)}(X_t) \in [0,1], \quad t = 1,2, \cdots, i = 1,2.
+\end{equation*}  
+The oracle rule $\pi^\star$ has access to both $f^{(1)}$ and $f^{(2)}$. 
+Given side information $X_t$, the oracle policy $\pi^\star$ chooses the arm that maximizes the expected reward, i.e.,
+\begin{equation*}
+    \pi^\star(X_t) = \arg \max_{i \in \{1,2\}} f^{(i)}(X_t).
+\end{equation*}
+
+We say that the machine satisfies the smoothness condition with parameter $(\beta, L)$ if
+\begin{equation*}
+    \left|f^{(i)}(x)-f^{(i)}\left(x^{\prime}\right)\right| \leq L\left\|x-x^{\prime}\right\|^\beta, \quad \forall x, x^{\prime} \in \mathcal{X}, i=1,2
+\end{equation*}
+for some $\beta \in [0,1]$ and $L > 0$.
+
+We say that the machine satisfies the margin condition with parameter $\alpha$ if there exists $\delta_0 \in(0,1), C_\delta>0$ such that
+$$
+P_X\left[0<\left|f^{(1)}(X)-f^{(2)}(X)\right| \leq \delta\right] \leq C_\delta \delta^\alpha, \quad \forall \delta \in\left[0, \delta_0\right]
+$$
+for some $\alpha>0$.
+
+Fix $\alpha, \beta, L>0$ such that $\alpha \beta<1$ and let $\mathcal{X}=[0,1]^d$. Assume that the covariates $X_t$ are uniformly distributed on the unit hypercube $\mathcal{X}$ and that there exists $\tau \in(0,1 / 2)$ such that $\left\{P_\theta^{(i)}, \theta \in[1 / 2-\tau, 1 / 2+\tau]\right\}$ satisfies 
+\begin{equation*}
+    \mathcal{K}\left(P_\theta^{(i)}, P_{\theta^{\prime}}^{(i)}\right) \leq \frac{1}{\kappa^2}\left(\theta-\theta^{\prime}\right)^2,
+\end{equation*}
+where $P_{f(X)}^{(i)}$ denotes the conditional distribution of $Y^{(i)}$ given $X$. 
+Then, there exists a pair of reward functions $f^{(i)}, i=1,2$ that satisfy both the smoothness condition with parameters $(\beta, L)$ and the margin condition with parameter $\alpha$, such that for any non-anticipating policy $\pi$ the regret is bounded as follows
+$$
+R_n(\pi) \geq C n^{1-\frac{\beta(\alpha+1)}{2 \beta+d}}
+$$

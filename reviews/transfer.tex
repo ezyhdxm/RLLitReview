@@ -1,0 +1,25 @@
+\subsection{Setup}
+
+Let $Q$ and $P$ be two distribution over $[0,1]^d \times [0,1]^K$ that generate a sequence of independent random vectors $(X_t, Y_t^{(1)}, \ldots, Y_t^{(K)})$. 
+Here, $(X_t)_{t\geq 1}$ is a sequence of i.i.d.~random vectors in $\calX = [0,1]^d$. 
+For each $k \in [K]$ and $t \geq 1$, $Y_t^{(k)}$ is a random variable in $[0,1]$ indicating the reward yielded by arm $k$ at time $t$, with conditional expectation given by $\E[Y_t^{(k)} \mid X_t] = f_k(X_t)$, where $f_k : \calX \to [0,1]$ is referred to as the \emph{reward function} of arm $k$.
+
+Before discussing the transfer learning setting, we relate the problem to the noisy contextual bandit setting.
+In that case, we have 
+\begin{equation*}
+    \E \left[R(t,a) \mid S_t\right] = f_a(S_t) = \left\langle \E \left[ \Phi(Y_t, a) \mid S_t \right], \theta\right\rangle ,
+\end{equation*}
+if $Y_t$ only depends on the context $S_t$ at time step $t$.
+In this sense, we can formulate the noisy linear bandit problem as a nonparametric contextual bandit problem. 
+Suppose that $Y_t = S_t + \xi_t$, where $\xi_t$ is a noise term that is independent of $S_t$ and has zero mean. 
+If $\Phi$ is a linear function, then the usual $\LinUCB$ algorithm already yields a $O(\sqrt{T})$-regret bound. 
+This implies that the performance of our algorithm would have a dependence on how linear the function $\Phi$ is.
+If we use a nonparametric bandit algorithm, such as $\texttt{UCBogram}$, we would achieve a nonparametric rate, depending on the smoothness of the reward function $f_a$.
+An interesting question is whether we can beat the nonparametric rate by leveraging the structure of the problem.  
+
+We use the $Q$-bandit (resp. $P$-bandit) to denote the bandit problem where the reward distribution is given by $Q$ (resp. $P$).
+The performance of the policy $\pi$ can be measured by its cumulative regret over $n_Q$ time steps, defined as
+\begin{equation*}
+    \E [R_{n_Q}(\pi)] := \E \left[ \sum_{t=1}^{n_Q} \left( Y_t^{Q,(\pi^\star(X_t^Q))}(X_t^Q) - Y_t^{Q,(\pi_t(X_t^Q))}(X_t^Q) \right) \right],
+\end{equation*}
+where $\pi^\star$ is the oracle policy with complete knowledge of the reward functions $\{f_k\}_{k=1}^K$. 

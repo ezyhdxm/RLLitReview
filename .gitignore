@@ -1,0 +1,46 @@
+# LaTeX intermediate and output files
+*.aux
+*.log
+*.toc
+*.out
+*.bbl
+*.blg
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.synctex.gz(busy)
+*.nav
+*.snm
+*.vrb
+*.lof
+*.lot
+*.lol
+*.xdv
+
+# PDF output
+*.pdf
+
+# Editor-specific files
+*.bak
+*~
+*.swp
+.DS_Store
+Thumbs.db
+
+# VSCode and LaTeX Workshop
+.vscode/
+*.acn
+*.acr
+*.alg
+*.glg
+*.glo
+*.gls
+*.ist
+
+# Auto-generated index and glossary files
+*.idx
+*.ilg
+*.ind
+
+# latexmk
+latexmk.out
